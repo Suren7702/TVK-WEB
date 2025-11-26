@@ -1,0 +1,4 @@
+{
+    "appService.defaultWebAppToDeploy": "/subscriptions/ec732a7c-1aae-4bbd-bf9f-e8a8020a2d25/resourceGroups/tvk-backend-api/providers/Microsoft.Web/sites/tvk-backend-api",
+    "appService.deploySubpath": "."
+}
