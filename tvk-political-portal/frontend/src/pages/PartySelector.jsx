@@ -1,64 +1,126 @@
-// src/pages/PartySelector.jsx
-import { useState, useMemo } from "react";
-import PARTY_NETWORK from "../data/partyNetwork.js";
+import { useState, useMemo, useEffect } from "react";
+import API from "../api.js"; // ✅ Import your API helper
+
+// A simple default placeholder image URL
+const DEFAULT_PHOTO = "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
 
 export default function PartySelector() {
+  // --- 1. STATE FOR DATA & SELECTION ---
+  const [partyNetwork, setPartyNetwork] = useState([]); // ✅ Stores live data from DB
+  const [loading, setLoading] = useState(true);
+
   const [selectedUnionId, setSelectedUnionId] = useState("");
   const [selectedVillageId, setSelectedVillageId] = useState("");
   const [selectedWardId, setSelectedWardId] = useState("");
   const [selectedBoothId, setSelectedBoothId] = useState("");
 
+  // --- 2. FETCH DATA FROM BACKEND ---
+  useEffect(() => {
+    const fetchPartyNetwork = async () => {
+      try {
+        // Calls the Controller: getPartyNetwork
+        const { data } = await API.get("/party-network"); 
+        setPartyNetwork(data); // Update state with live DB data
+        setLoading(false);
+      } catch (err) {
+        console.error("Error fetching party network:", err);
+        setLoading(false);
+      }
+    };
+
+    fetchPartyNetwork();
+  }, []);
+
+  const handleReset = () => {
+    setSelectedUnionId("");
+    setSelectedVillageId("");
+    setSelectedWardId("");
+    setSelectedBoothId("");
+  };
+
+  // --- 3. HIERARCHY LOGIC (Same as before, but uses partyNetwork state) ---
+  
+  // Find the selected Union
   const selectedUnion = useMemo(
-    () => PARTY_NETWORK.find((u) => u.id === selectedUnionId) || null,
-    [selectedUnionId]
+    () => partyNetwork.find((u) => u.id === selectedUnionId) || null,
+    [partyNetwork, selectedUnionId]
   );
 
+  // Find the selected Village
   const villageOptions = selectedUnion?.villages || [];
   const selectedVillage = useMemo(
     () => villageOptions.find((v) => v.id === selectedVillageId) || null,
     [villageOptions, selectedVillageId]
   );
 
+  // Find the selected Ward
   const wardOptions = selectedVillage?.wards || [];
   const selectedWard = useMemo(
     () => wardOptions.find((w) => w.id === selectedWardId) || null,
     [wardOptions, selectedWardId]
   );
 
+  // Find the selected Booth
   const boothOptions = selectedWard?.booths || [];
   const selectedBooth = useMemo(
     () => boothOptions.find((b) => b.id === selectedBoothId) || null,
     [boothOptions, selectedBoothId]
   );
 
-  // whichever level is selected last becomes "current details"
-  const currentNode = selectedBooth || selectedWard || selectedVillage || selectedUnion;
-
-  const pathText = useMemo(() => {
-    if (!selectedUnion) return "இப்போது எந்த பகுதியும் தேர்வு செய்யப்படவில்லை.";
-    const parts = [];
-    if (selectedUnion) parts.push(`யூனியன்: ${selectedUnion.nameTa}`);
-    if (selectedVillage) parts.push(`கிராமம்: ${selectedVillage.nameTa}`);
-    if (selectedWard) parts.push(`வார்டு: ${selectedWard.nameTa}`);
-    if (selectedBooth) parts.push(`பூத்: ${selectedBooth.nameTa}`);
-    return parts.join(" ➝ ");
+  // Construct Hierarchy Path
+  const hierarchyPath = useMemo(() => {
+    const path = [];
+    if (selectedUnion) path.push({ ...selectedUnion, labelTa: "யூனியன் பொறுப்பாளர்" });
+    if (selectedVillage) path.push({ ...selectedVillage, labelTa: "கிளை / கிராம பொறுப்பாளர்" });
+    if (selectedWard) path.push({ ...selectedWard, labelTa: "வார்டு பொறுப்பாளர்" });
+    if (selectedBooth) path.push({ ...selectedBooth, labelTa: "பூத் கமிட்டி பொறுப்பாளர்" });
+    return path;
   }, [selectedUnion, selectedVillage, selectedWard, selectedBooth]);
+
+  // --- 4. RENDER ---
+  if (loading) {
+    return (
+      <section className="page-wrap selector-page">
+        <p className="status-text" style={{textAlign: 'center', marginTop: '50px'}}>
+          தரவுகள் ஏற்றப்படுகின்றன... (Loading Data...)
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="page-wrap selector-page">
       <header className="page-header">
-        <h1 className="section-heading-ta">கட்சிப் பொறுப்பாளர்கள் – தொடர்பு தேடல்</h1>
+        <h1 className="section-heading-ta">கட்சிப் பொறுப்பாளர்கள் – நிர்வாக அமைப்பு</h1>
         <p className="section-subheading-ta">
-          கீழே உள்ள தேர்வுகளைப் பயன்படுத்தி யூனியன், கிராமம், வார்டு, பூத் வரை
-          சென்று அந்தப் பகுதியின் கட்சிப் பொறுப்பாளரின் தொடர்பு விபரங்களை மட்டும்
-          தெளிவாக பார்க்கலாம்.
+          கீழே உள்ள தேர்வுகளைப் பயன்படுத்தி யூனியன் முதல் பூத் வரை உள்ள 
+          அனைத்து நிர்வாகிகளின் விபரங்களையும் வரிசையாகப் பார்க்கலாம்.
         </p>
       </header>
 
       <div className="selector-layout">
-        {/* LEFT: Selection controls */}
+        {/* LEFT: Selection Controls */}
         <div className="selector-panel">
-          <h2 className="form-title-ta">பகுதி தேர்வு</h2>
+          <div className="panel-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h2 className="form-title-ta" style={{ margin: 0 }}>பகுதி தேர்வு</h2>
+            {selectedUnionId && (
+              <button 
+                onClick={handleReset} 
+                className="reset-btn"
+                style={{
+                  padding: '6px 12px',
+                  fontSize: '0.9rem',
+                  backgroundColor: '#dc3545',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '4px',
+                  cursor: 'pointer'
+                }}
+              >
+                Reset
+              </button>
+            )}
+          </div>
 
           {/* UNION SELECT */}
           <label className="form-label-ta">
@@ -75,10 +137,8 @@ export default function PartySelector() {
               }}
             >
               <option value="">— யூனியனைத் தேர்வு செய்யவும் —</option>
-              {PARTY_NETWORK.map((u) => (
-                <option key={u.id} value={u.id}>
-                  {u.nameTa}
-                </option>
+              {partyNetwork.map((u) => (
+                <option key={u.id} value={u.id}>{u.nameTa}</option>
               ))}
             </select>
           </label>
@@ -98,14 +158,10 @@ export default function PartySelector() {
               disabled={!selectedUnion}
             >
               <option value="">
-                {selectedUnion
-                  ? "— கிராமத்தைத் தேர்வு செய்யவும் —"
-                  : "முதலில் யூனியனைத் தேர்வு செய்யவும்"}
+                {selectedUnion ? "— கிராமத்தைத் தேர்வு செய்யவும் —" : "முதலில் யூனியனைத் தேர்வு செய்யவும்"}
               </option>
               {villageOptions.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.nameTa}
-                </option>
+                <option key={v.id} value={v.id}>{v.nameTa}</option>
               ))}
             </select>
           </label>
@@ -124,14 +180,10 @@ export default function PartySelector() {
               disabled={!selectedVillage}
             >
               <option value="">
-                {selectedVillage
-                  ? "— வார்டைத் தேர்வு செய்யவும் —"
-                  : "முதலில் கிராமத்தைத் தேர்வு செய்யவும்"}
+                {selectedVillage ? "— வார்டைத் தேர்வு செய்யவும் —" : "முதலில் கிராமத்தைத் தேர்வு செய்யவும்"}
               </option>
               {wardOptions.map((w) => (
-                <option key={w.id} value={w.id}>
-                  {w.nameTa}
-                </option>
+                <option key={w.id} value={w.id}>{w.nameTa}</option>
               ))}
             </select>
           </label>
@@ -146,81 +198,92 @@ export default function PartySelector() {
               disabled={!selectedWard || boothOptions.length === 0}
             >
               <option value="">
-                {selectedWard
-                  ? boothOptions.length
-                    ? "— பூத்தைத் தேர்வு செய்யவும் —"
-                    : "இந்த வார்டுக்கு பூத் தரவு சேர்க்கப்படவில்லை"
+                {selectedWard 
+                  ? boothOptions.length ? "— பூத்தைத் தேர்வு செய்யவும் —" : "தரவு இல்லை" 
                   : "முதலில் வார்டைத் தேர்வு செய்யவும்"}
               </option>
               {boothOptions.map((b) => (
-                <option key={b.id} value={b.id}>
-                  {b.nameTa}
-                </option>
+                <option key={b.id} value={b.id}>{b.nameTa}</option>
               ))}
             </select>
           </label>
         </div>
 
-        {/* RIGHT: Details Card */}
+        {/* RIGHT: Details List with Photos */}
         <div className="selector-details">
-          <h2 className="form-title-ta">தேர்ந்தெடுக்கப்பட்ட பகுதி விவரம்</h2>
+          <h2 className="form-title-ta">நிர்வாகிகள் பட்டியல் (Hierarchy)</h2>
 
-          <div className="selector-path">
-            <span className="selector-path-label">பகுதி:</span>
-            <span className="selector-path-text">{pathText}</span>
-          </div>
-
-          {!currentNode ? (
-            <p className="status-text">
-              யூனியன் / கிராமம் / வார்டு / பூத் தேர்வு செய்து விபரங்களைப் பார்க்கவும்.
-            </p>
-          ) : (
-            <div className="selector-card">
-              <p className="selector-node-type">
-                {currentNode.type === "union"
-                  ? "யூனியன் பொறுப்பாளர்"
-                  : currentNode.type === "village"
-                  ? "கிராமம் பொறுப்பாளர்"
-                  : currentNode.type === "ward"
-                  ? "வார்டு பொறுப்பாளர்"
-                  : "பூத் பொறுப்பாளர்"}
+          {hierarchyPath.length === 0 ? (
+            <div className="empty-state">
+              <p className="status-text">
+                இடதுபுறத்தில் உள்ள யூனியன் / கிராமம் / வார்டு ஆகியவற்றைத் தேர்வு செய்து பொறுப்பாளர்களின் புகைப்படங்களை பார்க்கவும்.
               </p>
+            </div>
+          ) : (
+            <div className="hierarchy-list">
+              {hierarchyPath.map((node, index) => (
+                <div key={node.id || index} className="selector-card hierarchy-card" style={{position: 'relative'}}>
+                  
+                  {/* Badge Number */}
+                  <span className="level-badge">{index + 1}</span>
 
-              <h3 className="selector-node-name">{currentNode.nameTa}</h3>
+                  <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start' }}>
+                    
+                    {/* PHOTO COLUMN */}
+                    <div className="card-photo-col" style={{ flexShrink: 0 }}>
+                      <img 
+                        src={node.photo || DEFAULT_PHOTO} 
+                        alt={node.person}
+                        style={{
+                          width: '90px',
+                          height: '90px',
+                          borderRadius: '50%',
+                          objectFit: 'cover',
+                          border: '3px solid #e0e0e0',
+                          backgroundColor: '#f9f9f9'
+                        }}
+                      />
+                    </div>
 
-              <div className="selector-node-row">
-                <span className="selector-node-label">பெயர்</span>
-                <span className="selector-node-value">
-                  {currentNode.person || "—"}
-                </span>
-              </div>
+                    {/* TEXT DETAILS COLUMN */}
+                    <div className="card-info-col" style={{ flexGrow: 1 }}>
+                      <p className="selector-node-type" style={{ marginBottom: '4px' }}>{node.labelTa}</p>
+                      <h3 className="selector-node-name" style={{ marginTop: '0', fontSize: '1.2rem' }}>{node.nameTa}</h3>
 
-              <div className="selector-node-row">
-                <span className="selector-node-label">பதவி</span>
-                <span className="selector-node-value">
-                  {currentNode.roleTa || "—"}
-                </span>
-              </div>
+                      <div className="selector-node-row">
+                        <span className="selector-node-label">பொறுப்பாளர்:</span>
+                        <span className="selector-node-value" style={{ fontWeight: 'bold' }}>
+                          {node.person || "—"}
+                        </span>
+                      </div>
 
-              <div className="selector-node-row">
-                <span className="selector-node-label">தொலைபேசி</span>
-                <span className="selector-node-value">
-                  {currentNode.phone ? (
-                    <a
-                      href={`tel:${currentNode.phone}`}
-                      className="selector-phone-link"
-                    >
-                      {currentNode.phone}
-                    </a>
-                  ) : (
-                    "—"
-                  )}
-                </span>
-              </div>
+                      <div className="selector-node-row">
+                        <span className="selector-node-label">பதவி:</span>
+                        <span className="selector-node-value">
+                          {node.roleTa || "—"}
+                        </span>
+                      </div>
 
-              <p className="selector-note">
-                * இத்தகவல் பொதுமக்கள் பயன்பாட்டிற்காக; நிர்வாகப் புதுப்பிப்புகளின்
-                அடிப்படையில் மாற்றம் ஏற்படலாம்.
+                      <div className="selector-node-row">
+                        <span className="selector-node-label">தொடர்புக்கு:</span>
+                        <span className="selector-node-value">
+                          {node.phone ? (
+                            <a href={`tel:${node.phone}`} className="selector-phone-link">
+                              {node.phone}
+                            </a>
+                          ) : (
+                            "—"
+                          )}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              ))}
+              
+              <p className="selector-note" style={{marginTop: '20px'}}>
+                * புகைப்படங்கள் கிடைக்கவில்லை எனில் பொதுவான சின்னம் காட்டப்படும்.
               </p>
             </div>
           )}

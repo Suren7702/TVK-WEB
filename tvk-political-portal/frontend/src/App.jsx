@@ -7,6 +7,7 @@ import PartyNetwork from "./pages/PartyNetwork.jsx";
 import PartySelector from "./pages/PartySelector.jsx"; // 👈 new
 import AdminLogin from "./pages/AdminLogin.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
+import AdminRegister from "./pages/AdminRegister";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
           <Route path="/barriers" element={<PartySelector />} /> 
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/secret-register" element={<AdminRegister />} />
         </Routes>
       </main>
       <Footer />
