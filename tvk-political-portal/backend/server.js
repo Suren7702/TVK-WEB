@@ -37,3 +37,19 @@ app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const checkApiKey = (req, res, next) => {
+  // The key must match the one you set in Vercel Env Vars
+  const mySecret = process.env.API_SECRET_KEY; 
+  const clientKey = req.headers['x-api-key'];
+
+  if (clientKey && clientKey === mySecret) {
+    next(); // Allowed!
+  } else {
+    res.status(403).json({ message: 'Forbidden: Invalid API Key' });
+  }
+};
+
+// Use this middleware on your routes
+app.get('/api/your-endpoint', checkApiKey, (req, res) => {
+  res.json({ message: "Hello from Secure Azure!" });
+});
