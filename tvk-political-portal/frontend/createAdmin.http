@@ -1,0 +1,8 @@
+POST http://localhost:5000/api/auth/register-admin
+Content-Type: application/json
+
+{
+  "name": "Suren",
+  "email": "admin@tvkportal.com",
+  "password": "Admin@123"
+}
