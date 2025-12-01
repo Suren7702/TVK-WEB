@@ -9,6 +9,7 @@ const normalizedEnvUrl = rawApiUrl.replace(/\/+$/, "");
 
 // Fallback to localhost for local development
 export const API_URL = normalizedEnvUrl || "http://localhost:5000";
+console.log("[api] using API_URL:", API_URL);
 
 // Create Axios Instance
 const API = axios.create({
