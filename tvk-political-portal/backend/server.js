@@ -16,11 +16,12 @@ const app = express();
 // ✅ CORS — Allows Your Vercel Frontend to Connect
 // ---------------------------------------------
 const corsOptions = {
-  origin: process.env.FRONTEND_URL || "http://localhost:5173",
-  methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
+  origin: process.env.FRONTEND_URL || "https://tvk-web.vercel.app",
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "x-api-key"],
   credentials: true,
+  optionsSuccessStatus: 204,
 };
-
 app.use(cors(corsOptions));
 // ---------------------------------------------
 

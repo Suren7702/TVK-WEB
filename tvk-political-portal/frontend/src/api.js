@@ -12,10 +12,8 @@ const API_URL = normalizedEnvUrl || "http://localhost:5000";
 
 // Create Axios Instance
 const API = axios.create({
-  baseURL: API_URL,
-  // If your backend uses cookie-based sessions change this to true.
-  // If you use JWT tokens in Authorization header, set to false.
-  withCredentials: true,
+  baseURL: (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "") || "http://localhost:5000",
+  withCredentials: false, // use false for JWT header flow
 });
 
 // Attach / remove Authorization header helper
