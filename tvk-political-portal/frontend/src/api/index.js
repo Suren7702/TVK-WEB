@@ -1,15 +1,14 @@
+// src/api/index.js
 import axios from "axios";
 
-// Read API URL from Vite environment variable
 const API = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL || "http://localhost:5000",
   withCredentials: true,
 });
 
-// Example function
 export const getHealth = async () => {
-  const response = await API.get("/api/health");
-  return response.data;
+  const res = await API.get("/api/health");
+  return res.data;
 };
 
 export default API;

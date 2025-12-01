@@ -7,37 +7,48 @@ export default function AdminLogin() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
     try {
-      // 1. Attempt login
-      const { data } = await API.post("/auth/login", { email, password });
-      
+      // IMPORTANT: use the full API route that matches your backend
+      const { data } = await API.post("/api/auth/login", {
+        email: email.trim(),
+        password,
+      });
+
+      // debug: uncomment if you need logs
+      // console.log("login response:", data);
+
       // Destructure data for cleaner access
       const { _id, name, email: userEmail, role, token } = data;
 
-      // 2. Role Check
+      // Role Check
       if (role !== "admin") {
         setError("Admin account only allowed");
+        setLoading(false);
         return;
       }
 
-      // 3. Save Auth Info (Token and User Data)
+      // Save Auth Info (Token and User Data)
       saveAuth(token, { _id, name, email: userEmail, role });
 
-      // 4. Set Authorization Header for future requests
+      // Set Authorization Header for future requests
       setAuthToken(token);
 
-      // 5. Redirect to admin dashboard
+      // Redirect to admin dashboard
       navigate("/admin/dashboard");
     } catch (err) {
-      // 6. Handle Login Errors
+      console.error("Login error:", err.response?.data || err.message);
       const errorMessage = err.response?.data?.message || "Login failed";
       setError(errorMessage);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -76,8 +87,8 @@ export default function AdminLogin() {
 
           {error && <p className="error-text">{error}</p>}
 
-          <button type="submit" className="btn btn-primary btn-full">
-            உள்நுழைக
+          <button type="submit" className="btn btn-primary btn-full" disabled={loading}>
+            {loading ? "Signing in..." : "உள்நுழைக"}
           </button>
         </form>
       </div>
