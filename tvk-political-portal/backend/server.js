@@ -79,7 +79,7 @@ export const checkApiKey = (req, res, next) => {
 // --- Register public routes ---
 app.use("/api/auth", authRoutes);
 app.use("/api/news", newsRoutes);
-app.use("/api/party", partyRoutes);
+app.use("/api/party-network", partyRoutes);
 app.use("/api/events", eventRoutes);
 
 // --- Example protected route ---
