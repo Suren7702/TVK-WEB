@@ -1,25 +1,24 @@
+// src/api.js
 import axios from "axios";
 
-// -------------------------------------------
-// 1️⃣ API Base URL (Vercel → Vite Environment Variable)
-// -------------------------------------------
-// This reads your environment variable defined in Vercel:
-// VITE_API_URL = https://your-backend.onrender.com
-//
-// If you ever test locally without .env, it falls back to localhost.
-// -------------------------------------------
+// Read raw env value
+const rawApiUrl = import.meta.env.VITE_API_URL || "";
 
-const API_URL = import.meta.env.VITE_API_URL || "https://tvk-web.onrender.com/";
+// Trim trailing slash if present so we never produce double slashes later
+const normalizedEnvUrl = rawApiUrl.replace(/\/+$/, "");
+
+// Fallback to localhost for local development
+const API_URL = normalizedEnvUrl || "http://localhost:5000";
 
 // Create Axios Instance
 const API = axios.create({
-  baseURL: API_URL, 
-  withCredentials: true, // For secure cookies or auth headers
+  baseURL: API_URL,
+  // If your backend uses cookie-based sessions change this to true.
+  // If you use JWT tokens in Authorization header, set to false.
+  withCredentials: true,
 });
 
-// -------------------------------------------
-// 2️⃣ Attach Auth Token (Reusable for Login)
-// -------------------------------------------
+// Attach / remove Authorization header helper
 export const setAuthToken = (token) => {
   if (token) {
     API.defaults.headers.common["Authorization"] = `Bearer ${token}`;
@@ -28,9 +27,7 @@ export const setAuthToken = (token) => {
   }
 };
 
-// -------------------------------------------
-// 3️⃣ Example Health Check Function
-// -------------------------------------------
+// Example health helper
 export const getHealth = async () => {
   const res = await API.get("/api/health");
   return res.data;
