@@ -269,12 +269,257 @@ export default function AdminDashboard() {
         <h1 className="section-heading-ta">நிர்வாக – செய்தி, நிகழ்வு & கட்சிப் பொறுப்பாளர்கள்</h1>
         {user && <p className="status-text">உள்நுழைந்தவர்: {user.name}</p>}
       </header>
+      {/* ======================================================= */}
+      {/* SECTION 1: PARTY BARRIER MANAGEMENT (HIERARCHY VIEW)    */}
+      {/* ======================================================= */}
+      <div className="admin-section-box" style={{border: '2px solid #F26522', padding: '20px', borderRadius: '8px', marginBottom: '30px', backgroundColor: '#fff'}}>
+        <h2 className="form-title-ta" style={{color: '#F26522'}}>கட்சிப் பொறுப்பாளர்கள் மேலாண்மை (Party Barriers)</h2>
 
-      {/* ... rest of your JSX remains unchanged ... */}
-      {/* (all JSX below is identical to your original file; omitted here to keep snippet concise) */}
+        {/* --- 1. SELECTORS (View) --- */}
+        <div className="hierarchy-selectors" style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '10px', marginBottom: '20px'}}>
+            
+            {/* UNION SELECT */}
+            <div>
+                <label className="form-label-ta">யூனியன்</label>
+                <select className="input" value={selUnionId} onChange={e => { setSelUnionId(e.target.value); setSelVillageId(""); setSelWardId(""); setSelBoothId(""); }}>
+                    <option value="">— Select Union —</option>
+                    {partyNetwork.map(u => <option key={u.id} value={u.id}>{u.nameTa}</option>)}
+                </select>
+            </div>
 
-      {/* place the unchanged JSX from your original file here (no changes needed) */}
+            {/* VILLAGE SELECT */}
+            <div>
+                <label className="form-label-ta">கிராமம்</label>
+                <select className="input" value={selVillageId} onChange={e => { setSelVillageId(e.target.value); setSelWardId(""); setSelBoothId(""); }} disabled={!selUnionId}>
+                    <option value="">— Select Village —</option>
+                    {selectedUnion?.villages?.map(v => <option key={v.id} value={v.id}>{v.nameTa}</option>)}
+                </select>
+            </div>
 
+            {/* WARD SELECT */}
+            <div>
+                <label className="form-label-ta">வார்டு</label>
+                <select className="input" value={selWardId} onChange={e => { setSelWardId(e.target.value); setSelBoothId(""); }} disabled={!selVillageId}>
+                    <option value="">— Select Ward —</option>
+                    {selectedVillage?.wards?.map(w => <option key={w.id} value={w.id}>{w.nameTa}</option>)}
+                </select>
+            </div>
+
+            {/* BOOTH SELECT */}
+            <div>
+                <label className="form-label-ta">பூத்</label>
+                <select className="input" value={selBoothId} onChange={e => setSelBoothId(e.target.value)} disabled={!selWardId}>
+                    <option value="">— Select Booth —</option>
+                    {selectedWard?.booths?.map(b => <option key={b.id} value={b.id}>{b.nameTa}</option>)}
+                </select>
+            </div>
+        </div>
+
+        {/* --- 2. DISPLAY & ACTIONS (List) --- */}
+        <div className="hierarchy-display">
+            <h3 className="section-subheading-ta">தற்போதைய பொறுப்பாளர்கள்:</h3>
+            <ul className="admin-news-items">
+                <li className="admin-news-item" style={{borderLeft: '4px solid #F26522'}}>
+                    <div>
+                        <strong>யூனியன் நிலை:</strong> {selectedUnion ? selectedUnion.nameTa : "Not Selected"} <br/>
+                        <span style={{fontSize:'0.9rem', color:'#666'}}>{selectedUnion?.person || "No In-charge assigned"}</span>
+                    </div>
+                    <div><ActionButtons node={selectedUnion} level="union" parentId={null} /></div>
+                </li>
+
+                {selUnionId && (
+                    <li className="admin-news-item" style={{borderLeft: '4px solid #28a745', marginLeft: '20px'}}>
+                        <div>
+                            <strong>கிராமம் நிலை:</strong> {selectedVillage ? selectedVillage.nameTa : "Not Selected"} <br/>
+                            <span style={{fontSize:'0.9rem', color:'#666'}}>{selectedVillage?.person || "No In-charge assigned"}</span>
+                        </div>
+                        <div><ActionButtons node={selectedVillage} level="village" parentId={selUnionId} /></div>
+                    </li>
+                )}
+
+                {selVillageId && (
+                    <li className="admin-news-item" style={{borderLeft: '4px solid #17a2b8', marginLeft: '40px'}}>
+                        <div>
+                            <strong>வார்டு நிலை:</strong> {selectedWard ? selectedWard.nameTa : "Not Selected"} <br/>
+                            <span style={{fontSize:'0.9rem', color:'#666'}}>{selectedWard?.person || "No In-charge assigned"}</span>
+                        </div>
+                        <div><ActionButtons node={selectedWard} level="ward" parentId={selVillageId} /></div>
+                    </li>
+                )}
+
+                {selWardId && (
+                    <li className="admin-news-item" style={{borderLeft: '4px solid #ffc107', marginLeft: '60px'}}>
+                        <div>
+                            <strong>பூத் நிலை:</strong> {selectedBooth ? selectedBooth.nameTa : "Not Selected"} <br/>
+                            <span style={{fontSize:'0.9rem', color:'#666'}}>{selectedBooth?.person || "No In-charge assigned"}</span>
+                        </div>
+                        <div><ActionButtons node={selectedBooth} level="booth" parentId={selWardId} /></div>
+                    </li>
+                )}
+            </ul>
+        </div>
+
+        {/* --- 3. ADD / EDIT FORM --- */}
+        {targetLevel && (
+            <div className="admin-form" style={{marginTop:'20px', border:'1px dashed #ccc', padding:'15px', backgroundColor: isEditing ? '#fffbf0' : '#fff'}}>
+                <h3 className="form-title-ta">
+                    {isEditing ? `Edit ${targetLevel} Details` : `Add New ${targetLevel}`}
+                </h3>
+                <form onSubmit={handleBarrierSubmit}>
+                    <div style={{display:'grid', gridTemplateColumns:'1fr 1fr', gap:'10px'}}>
+                        <label className="form-label-ta">இடத்தின் பெயர் (Place Name)
+                            <input name="nameTa" className="input" placeholder="e.g. Manapparai Union" value={barrierForm.nameTa} onChange={handleBarrierChange} required />
+                        </label>
+                        <label className="form-label-ta">பொறுப்பாளர் பெயர் (Person Name)
+                            <input name="personName" className="input" placeholder="e.g. Mr. Palanisamy" value={barrierForm.personName} onChange={handleBarrierChange} required />
+                        </label>
+                        <label className="form-label-ta">பதவி (Role)
+                            <input name="roleTa" className="input" placeholder="e.g. Union Secretary" value={barrierForm.roleTa} onChange={handleBarrierChange} required />
+                        </label>
+                        <label className="form-label-ta">தொலைபேசி (Phone)
+                            <input name="phone" className="input" placeholder="9876543210" value={barrierForm.phone} onChange={handleBarrierChange} />
+                        </label>
+                        
+                        {/* ✅ MODIFIED: PHOTO UPLOAD INPUT */}
+                        <label className="form-label-ta" style={{gridColumn:'span 2'}}>
+                            புகைப்படம் (Upload Photo)
+                            <input 
+                                type="file" 
+                                accept="image/*"
+                                className="input" 
+                                onChange={handleFileChange} // Calls helper function
+                            />
+                            {barrierForm.photoUrl && (
+                                <div style={{marginTop: '10px'}}>
+                                    <small>Preview:</small> <br/>
+                                    <img src={barrierForm.photoUrl} alt="Preview" style={{height:'60px', borderRadius:'5px', border:'1px solid #ccc'}} />
+                                </div>
+                            )}
+                        </label>
+                    </div>
+                    <div style={{marginTop:'15px', display:'flex', gap:'10px'}}>
+                        <button type="submit" className="btn btn-primary">{isEditing ? "Update Details" : "Save Details"}</button>
+                        <button type="button" className="btn btn-outline-small" onClick={() => {setTargetLevel(""); setIsEditing(false);}}>Cancel</button>
+                    </div>
+                    {barrierStatus && <p className="status-text">{barrierStatus}</p>}
+                </form>
+            </div>
+        )}
+      </div>
+
+      {/* --- 4. VIEW DETAILS POPUP (MODAL) --- */}
+      {viewNode && (
+          <div 
+            style={{
+              position: 'fixed', 
+              top: 0, left: 0, right: 0, bottom: 0,
+              backgroundColor: 'rgba(0,0,0,0.8)', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 10000 
+            }}
+            onClick={() => setViewNode(null)}
+          >
+              <div 
+                style={{
+                    backgroundColor: '#fff', padding: '25px', borderRadius: '10px', 
+                    maxWidth: '450px', width: '90%', boxShadow: '0 5px 15px rgba(0,0,0,0.3)', position: 'relative'
+                }}
+                onClick={(e) => e.stopPropagation()} 
+              >
+                  <button onClick={() => setViewNode(null)} style={{position: 'absolute', top: '10px', right: '15px', background:'none', border:'none', fontSize:'1.5rem', cursor:'pointer'}}>&times;</button>
+                  <h2 className="form-title-ta" style={{borderBottom:'1px solid #eee', paddingBottom:'10px', marginTop: 0}}>விவரங்கள் (Details)</h2>
+                  
+                  <div style={{display:'flex', gap:'20px', alignItems:'center', marginBottom:'20px'}}>
+                    <img src={viewNode.photo || "https://cdn-icons-png.flaticon.com/512/3135/3135715.png"} alt="Profile" style={{width:'100px', height:'100px', borderRadius:'50%', objectFit:'cover', border:'4px solid #f0f0f0'}} />
+                    <div>
+                        <h3 style={{margin:'0 0 5px 0', color:'#F26522', fontSize:'1.4rem'}}>{viewNode.nameTa}</h3>
+                        <span style={{backgroundColor: '#fff0e6', color: '#F26522', border: '1px solid #ffccbc', padding: '4px 8px', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold'}}>
+                            {viewNode.type ? viewNode.type.toUpperCase() : "UNKNOWN"}
+                        </span>
+                    </div>
+                  </div>
+
+                  <div style={{display: 'grid', gap: '10px', fontSize: '1rem'}}>
+                      <div style={{display:'flex', justifyContent:'space-between', borderBottom:'1px solid #f9f9f9', paddingBottom:'5px'}}>
+                          <span style={{color:'#666'}}>பொறுப்பாளர்:</span><span style={{fontWeight:'bold', color:'black'}}>{viewNode.person || "—"}</span>
+                      </div>
+                      <div style={{display:'flex', justifyContent:'space-between', borderBottom:'1px solid #f9f9f9', paddingBottom:'5px'}}>
+                          <span style={{color:'#666'}}>பதவி:</span><span style={{fontWeight:'bold', color: 'black'}}>{viewNode.roleTa || "—"}</span>
+                      </div>
+                      <div style={{display:'flex', justifyContent:'space-between', borderBottom:'1px solid #f9f9f9', paddingBottom:'5px'}}>
+                          <span style={{color:'#666'}}>தொலைபேசி:</span>
+                          <span style={{fontWeight:'bold'}}>{viewNode.phone ? <a href={`tel:${viewNode.phone}`} style={{color:'#007bff'}}>{viewNode.phone}</a> : "—"}</span>
+                      </div>
+                  </div>
+
+                  <div style={{textAlign:'center', marginTop:'25px'}}>
+                      <button className="btn btn-primary" onClick={() => setViewNode(null)} style={{width:'100%'}}>Close</button>
+                  </div>
+              </div>
+          </div>
+      )}
+
+      {/* ======================================================= */}
+      {/* SECTION 2: NEWS & EVENTS */}
+      {/* ======================================================= */}
+      <div className="admin-layout">
+        {/* NEWS FORM */}
+        <form onSubmit={handleNewsSubmit} className="admin-form">
+          <h2 className="form-title-ta">புதிய செய்தி சேர்க்க</h2>
+          <label className="form-label-ta">தலைப்பு <input name="title" className="input" value={newsForm.title} onChange={handleNewsChange} required /></label>
+          <label className="form-label-ta">செய்தி விவரம் <textarea name="content" className="textarea" value={newsForm.content} onChange={handleNewsChange} required /></label>
+          <label className="form-label-ta">படம் URL <input name="imageUrl" className="input" value={newsForm.imageUrl} onChange={handleNewsChange} /></label>
+          <label className="form-label-ta">வகை
+            <select name="category" className="input" value={newsForm.category} onChange={handleNewsChange}>
+              <option value="district">மாவட்டம்</option>
+              <option value="state">மாநிலம்</option>
+              <option value="national">தேசியம்</option>
+            </select>
+          </label>
+          <button type="submit" className="btn btn-primary btn-full">செய்தி சேர்க்க</button>
+        </form>
+
+        {/* NEWS LIST & EVENTS */}
+        <div className="admin-news-list">
+          <h2 className="form-title-ta">செய்திகள்</h2>
+          {newsList.length === 0 ? <p className="status-text">செய்திகள் இல்லை.</p> : (
+            <ul className="admin-news-items">
+              {newsList.map((n) => (
+                <li key={n._id} className="admin-news-item">
+                  <div>
+                    <p className="admin-news-title">{n.title}</p>
+                    <p className="admin-news-meta">{new Date(n.publishedAt).toLocaleDateString("ta-IN")}</p>
+                  </div>
+                  <button type="button" className="btn btn-outline-small" onClick={() => handleNewsDelete(n._id)}>நீக்கு</button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {/* EVENTS BLOCK */}
+          <div style={{ marginTop: "1.5rem" }}>
+            <h2 className="form-title-ta">நிகழ்வுகள்</h2>
+            <form onSubmit={handleEventSubmit} className="auth-form" style={{ marginTop: "0.75rem" }}>
+              <label className="form-label-ta">தலைப்பு <input name="title" className="input" value={eventForm.title} onChange={handleEventChange} required /></label>
+              <label className="form-label-ta">தேதி <input type="date" name="date" className="input" value={eventForm.date} onChange={handleEventChange} /></label>
+              <label className="form-label-ta">இடம் <input name="location" className="input" value={eventForm.location} onChange={handleEventChange} /></label>
+              <label className="form-label-ta">படம் URL <input name="imageUrl" className="input" value={eventForm.imageUrl} onChange={handleEventChange} required /></label>
+              <label className="form-label-ta">விளக்கம் <textarea name="description" className="textarea" value={eventForm.description} onChange={handleEventChange} /></label>
+              <button type="submit" className="btn btn-primary btn-full">நிகழ்வு சேர்க்க</button>
+            </form>
+            <ul className="admin-news-items" style={{ marginTop: "0.75rem" }}>
+              {events.map((ev) => (
+                <li key={ev._id} className="admin-news-item">
+                    <div>
+                        <p className="admin-news-title">{ev.title}</p>
+                        <p className="admin-news-meta">{ev.date ? new Date(ev.date).toLocaleDateString("ta-IN") : ""}</p>
+                    </div>
+                    <button className="btn btn-outline-small" onClick={() => handleEventDelete(ev._id)}>நீக்கு</button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
