@@ -1,8 +1,8 @@
 // routes/partyRoutes.js
 import express from "express";
-import { checkApiKey } from "../server.js"; 
-// Import the actual controller function that saves the data
-import { getPartyNetwork, addPartyUnit, updatePartyUnit, deletePartyUnit } from "../controllers/partyController.js"; 
+
+// Assuming your controller functions are defined here
+// import { addPartyNetwork } from "../controllers/partyController.js"; 
 
 const router = express.Router();
 
