@@ -6,7 +6,7 @@ export default function News() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    API.get("/news")
+    API.get("/api/news")
       .then((res) => setNews(res.data))
       .catch((err) => console.error(err))
       .finally(() => setLoading(false));
