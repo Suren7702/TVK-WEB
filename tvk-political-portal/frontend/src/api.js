@@ -1,19 +1,19 @@
 // src/api.js
 import axios from "axios";
 
-// Read raw env value
+// Read raw env value (Vite)
 const rawApiUrl = import.meta.env.VITE_API_URL || "";
 
 // Trim trailing slash if present so we never produce double slashes later
 const normalizedEnvUrl = rawApiUrl.replace(/\/+$/, "");
 
 // Fallback to localhost for local development
-const API_URL = normalizedEnvUrl || "http://localhost:5000";
+export const API_URL = normalizedEnvUrl || "http://localhost:5000";
 
 // Create Axios Instance
 const API = axios.create({
-  baseURL: (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "") || "http://localhost:5000",
-  withCredentials: false, // use false for JWT header flow
+  baseURL: API_URL,
+  withCredentials: false, // set to true only if you use cookie-based auth and backend allows credentials
 });
 
 // Attach / remove Authorization header helper
