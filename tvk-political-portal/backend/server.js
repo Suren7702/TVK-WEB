@@ -2,6 +2,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import adminProxy from "./routes/adminProxy.js";
 import connectDB from "./config/db.js";
 import authRoutes from "./routes/authRoutes.js";
 import newsRoutes from "./routes/newsRoutes.js";
@@ -42,6 +43,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/news", newsRoutes);
 app.use("/api/party-network", partyRoutes);
 app.use("/api/events", eventRoutes);
+app.use("/api/admin", adminProxy);
 
 // --- Basic health routes ---
 app.get("/", (req, res) => {
