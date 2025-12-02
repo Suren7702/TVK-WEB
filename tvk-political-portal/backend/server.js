@@ -8,6 +8,10 @@ import newsRoutes from "./routes/newsRoutes.js";
 import partyRoutes from "./routes/partyRoutes.js";
 import eventRoutes from "./routes/eventRoutes.js";
 
+// new middleware imports
+import requestLogger from "./middleware/requestLogger.js"; // debug logger
+// do NOT import checkApiKey here (it's used by routes) to avoid circular imports
+
 dotenv.config();
 
 const app = express();
@@ -29,31 +33,9 @@ app.use(cors(corsOptions));
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// --- API key middleware (reusable) ---
-export const checkApiKey = (req, res, next) => {
-  const mySecret = process.env.API_SECRET_KEY;
-  const clientKey =
-    req.headers["x-api-key"] || req.query.api_key || req.headers["authorization"];
-
-  if (!mySecret) {
-    return res.status(500).json({ message: "Server misconfiguration: API key missing" });
-  }
-
-  const normalizedClientKey =
-    typeof clientKey === "string" && clientKey.toLowerCase().startsWith("bearer ")
-      ? clientKey.split(" ")[1]
-      : clientKey;
-
-  if (!normalizedClientKey) {
-    return res.status(401).json({ message: "Unauthorized: API Key is required" });
-  }
-
-  if (normalizedClientKey === mySecret) {
-    return next();
-  } else {
-    return res.status(403).json({ message: "Forbidden: Invalid API Key" });
-  }
-};
+// --- DEBUG request logger (short-term; safe to keep while debugging) ---
+// Log basic headers and parsed body so you can see what arrives on Render
+app.use(requestLogger);
 
 // --- Register all routes (Base paths) ---
 app.use("/api/auth", authRoutes);
@@ -69,8 +51,6 @@ app.get("/", (req, res) => {
 // --- Start server after DB connected ---
 const startServer = async () => {
   try {
-    // IMPORTANT: connectDB should accept/process process.env.MONGO_URI internally.
-    // If your connectDB expects a uri argument, pass process.env.MONGO_URI here.
     await connectDB(); // wait for DB connection before starting server
     console.log("✅ Database connected, starting HTTP server...");
 
@@ -84,7 +64,6 @@ const startServer = async () => {
       console.log(`\nReceived ${signal}. Closing server...`);
       server.close(() => {
         console.log("HTTP server closed.");
-        // Let connectDB or mongoose handle closing DB connection if needed in connectDB implementation
         process.exit(0);
       });
     };
@@ -93,14 +72,12 @@ const startServer = async () => {
 
   } catch (err) {
     console.error("Failed to start server — DB connection error:", err);
-    // Exit so the process manager (Render) will restart or surface the error
     process.exit(1);
   }
 };
 
 startServer();
 
-// Optional: log unhandled rejections so you can debug connection issues
 process.on("unhandledRejection", (reason, p) => {
   console.error("Unhandled Rejection at Promise:", p, "reason:", reason);
 });

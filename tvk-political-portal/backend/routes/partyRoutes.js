@@ -1,52 +1,92 @@
+// routes/partyRoutes.js
 import express from "express";
-
-// Assuming your controller functions are defined here
-// import { addPartyNetwork } from "../controllers/partyController.js"; 
+import multer from "multer";
+import checkApiKey from "../middleware/checkApiKey.js"; // make sure this file exists
+// import { addPartyNetwork } from "../controllers/partyController.js"; // uncomment when ready
 
 const router = express.Router();
 
-// --- Fix for Cannot POST /api/party-network/add ---
-// The subpath here must be just '/add' because the base path
-// '/api/party-network' is already handled in server.js.
+// multer setup — memoryStorage keeps the file in req.file.buffer (you can change to diskStorage)
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB limit (adjust as needed)
+});
 
-// You should also include your authentication middleware if needed,
-// for example: router.post("/add", checkApiKey, addPartyNetwork);
-// For now, we'll use a simple placeholder function.
+// Helper: consistent response for validation errors
+const badRequest = (res, msg) => res.status(400).json({ ok: false, message: msg });
 
-router.post("/add", (req, res) => {
-    // 1. Logic Check: Ensure you have a request body
-    if (!req.body || Object.keys(req.body).length === 0) {
-        return res.status(400).json({ message: "Request body cannot be empty." });
+// POST /api/party-network/add
+// - Accepts either JSON (application/json) OR multipart/form-data with an optional "photo" file.
+// - Protect with API key middleware if you want (checkApiKey). Remove it if not used.
+router.post(
+  "/add",
+  checkApiKey,      // remove this if you don't require API key for this route
+  upload.single("photo"),
+  async (req, res) => {
+    try {
+      // If client used JSON, express.json() has already parsed it.
+      // If client used multipart/form-data, multer populated req.body & req.file.
+      const body = req.body || {};
+      const file = req.file || null;
+
+      // Debug log (will appear in Render logs)
+      console.log("Add party network request received. content-type:", req.headers["content-type"]);
+      console.log("Parsed body keys:", Object.keys(body));
+      if (file) {
+        console.log("Received file:", { fieldname: file.fieldname, originalname: file.originalname, size: file.size });
+      }
+
+      // Basic validation: change fields to match your front-end shape
+      const { networkName, founder, yearEstablished, age, office } = body;
+
+      // Example required field check — adapt to your schema
+      if (!networkName || typeof networkName !== "string" || networkName.trim().length === 0) {
+        return badRequest(res, "Missing or invalid field: networkName");
+      }
+
+      // Optional: more validation
+      if (yearEstablished && isNaN(Number(yearEstablished))) {
+        return badRequest(res, "yearEstablished must be a number");
+      }
+
+      // At this point, insert into DB / call controller
+      // Example (uncomment and implement addPartyNetwork controller):
+      // const saved = await addPartyNetwork({ networkName, founder, yearEstablished, photo: file ? file.buffer : null, ... });
+
+      // For now, mock the saved document
+      const saved = {
+        id: "mock_id_123",
+        networkName,
+        founder: founder || null,
+        yearEstablished: yearEstablished || null,
+        hasPhoto: !!file,
+      };
+
+      console.log(`Successfully added party network: ${networkName} (id=${saved.id})`);
+
+      return res.status(201).json({
+        ok: true,
+        message: "Party network successfully added",
+        data: saved,
+      });
+    } catch (err) {
+      console.error("Error in /api/party-network/add:", err && err.stack ? err.stack : err);
+      return res.status(500).json({ ok: false, message: "Internal server error" });
     }
+  }
+);
 
-    // 2. Extract Data
-    const { networkName, founder, yearEstablished } = req.body;
-
-    // 3. Database Operation (Placeholder for real DB code)
-    console.log(`Attempting to add new party network: ${networkName}`);
-    
-    // In a real app, you would call a controller function to save data to MongoDB
-    // const newParty = await addPartyNetwork(req.body); 
-
-    // 4. Send Success Response
-    res.status(201).json({ 
-        message: "Party network successfully added!",
-        networkName: networkName,
-        // You might return the newly created document ID here
-        id: "mock_id_123" 
-    });
-});
-// ----------------------------------------------------
-
-
-// You might have other routes here, like:
-router.get("/all", (req, res) => {
-    res.json({ message: "List of all party networks" });
+// GET /api/party-network/all
+router.get("/all", async (req, res) => {
+  // TODO: replace with DB fetch logic
+  res.json({ ok: true, message: "List of all party networks (mock)", data: [] });
 });
 
-router.get("/:id", (req, res) => {
-    res.json({ message: `Details for party network ID: ${req.params.id}` });
+// GET /api/party-network/:id
+router.get("/:id", async (req, res) => {
+  const { id } = req.params;
+  // TODO: replace with DB fetch logic
+  res.json({ ok: true, message: `Details for party network ID: ${id}`, data: null });
 });
-
 
 export default router;
