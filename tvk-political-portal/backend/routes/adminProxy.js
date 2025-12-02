@@ -1,16 +1,7 @@
-// routes/adminProxy.js
+// backend/routes/adminProxy.js
 import express from "express";
 
 const router = express.Router();
-
-/**
- * Proxy route for admin actions that require the server secret.
- * - Verifies caller is an admin by calling /api/auth/me with the same Authorization header.
- * - Forwards the request to the internal /api/party-network routes using API_SECRET_KEY.
- *
- * NOTE: This implementation uses the same host to call internal endpoints.
- * Make sure your backend can call itself via the Host header (it normally can).
- */
 
 async function fetchJson(url, opts = {}) {
   const res = await fetch(url, opts);
@@ -23,35 +14,47 @@ async function fetchJson(url, opts = {}) {
 }
 
 function getBaseUrl(req) {
-  // Build base URL for internal calls: preserve protocol + host
-  // note: during containerized deployment this will resolve to external host; that's OK.
   const proto = req.protocol || "http";
   const host = req.get("host");
   return `${proto}://${host}`;
 }
 
-// Helper: check admin using existing /api/auth/me endpoint
+// NEW: robust verifyAdmin that accepts Authorization header OR Cookie
 async function verifyAdmin(req) {
+  // prefer Authorization header
   const authHeader = req.headers["authorization"];
-  if (!authHeader) return { ok: false, status: 401, message: "Missing Authorization header" };
+  const cookieHeader = req.headers["cookie"]; // if you use cookie-based auth/session
+
+  if (!authHeader && !cookieHeader) {
+    return { ok: false, status: 401, message: "Authorization token is missing. Access denied." };
+  }
 
   const base = getBaseUrl(req);
   const url = `${base}/api/auth/me`;
+
+  // forward whichever is present
+  const headers = { "Content-Type": "application/json" };
+  if (authHeader) headers["Authorization"] = authHeader;
+  if (cookieHeader) headers["Cookie"] = cookieHeader;
+
   const result = await fetchJson(url, {
     method: "GET",
-    headers: { "Authorization": authHeader, "Content-Type": "application/json" },
+    headers,
   });
 
-  if (!result.ok) return { ok: false, status: result.status, message: result.body?.message || "Auth check failed" };
+  if (!result.ok) {
+    // pass through message if available
+    const msg = result.body?.message || "Auth check failed";
+    return { ok: false, status: result.status, message: msg };
+  }
 
-  // result.body expected to contain user info; check role === 'admin'
   const user = result.body;
   if (!user || user.role !== "admin") return { ok: false, status: 403, message: "Admin required" };
 
   return { ok: true, user };
 }
 
-// POST /api/admin/party-network/add  -> forwards to /api/party-network/add (server-side secret)
+// rest of file: same proxies as before
 router.post("/party-network/add", async (req, res) => {
   try {
     const verified = await verifyAdmin(req);
@@ -59,8 +62,6 @@ router.post("/party-network/add", async (req, res) => {
 
     const base = getBaseUrl(req);
     const dest = `${base}/api/party-network/add`;
-
-    // Forward the request using server secret
     const serverKey = process.env.API_SECRET_KEY;
     if (!serverKey) return res.status(500).json({ message: "Server misconfiguration: API_SECRET_KEY missing" });
 
@@ -80,7 +81,6 @@ router.post("/party-network/add", async (req, res) => {
   }
 });
 
-// PUT /api/admin/party-network/:id  -> forwards to /api/party-network/:id
 router.put("/party-network/:id", async (req, res) => {
   try {
     const verified = await verifyAdmin(req);
@@ -88,7 +88,6 @@ router.put("/party-network/:id", async (req, res) => {
 
     const base = getBaseUrl(req);
     const dest = `${base}/api/party-network/${req.params.id}`;
-
     const serverKey = process.env.API_SECRET_KEY;
     if (!serverKey) return res.status(500).json({ message: "Server misconfiguration: API_SECRET_KEY missing" });
 
@@ -108,7 +107,6 @@ router.put("/party-network/:id", async (req, res) => {
   }
 });
 
-// DELETE /api/admin/party-network/:id  -> forwards to /api/party-network/:id
 router.delete("/party-network/:id", async (req, res) => {
   try {
     const verified = await verifyAdmin(req);
@@ -116,11 +114,9 @@ router.delete("/party-network/:id", async (req, res) => {
 
     const base = getBaseUrl(req);
     const dest = `${base}/api/party-network/${req.params.id}`;
-
     const serverKey = process.env.API_SECRET_KEY;
     if (!serverKey) return res.status(500).json({ message: "Server misconfiguration: API_SECRET_KEY missing" });
 
-    // If client passed a body (e.g., level) we forward it
     const forwardRes = await fetchJson(dest, {
       method: "DELETE",
       headers: {
