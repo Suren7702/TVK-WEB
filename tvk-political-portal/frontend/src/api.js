@@ -11,7 +11,7 @@ export const API_URL = normalizedEnvUrl || "https://tvk-web.onrender.com";
 console.log("[api] using API_URL:", API_URL);
 
 // Get the secret key from your client's environment variables
-const CLIENT_API_KEY = import.meta.env.VITE_API_SECRET_KEY;
+const CLIENT_API_KEY = import.meta.env.VITE_API_KEY;
 
 
 // Create Axios Instance
