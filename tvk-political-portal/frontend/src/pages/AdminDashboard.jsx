@@ -84,6 +84,7 @@ export default function AdminDashboard() {
       }
     };
     init();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [navigate]);
 
   // --- DATA LOADERS ---
@@ -110,6 +111,7 @@ export default function AdminDashboard() {
   const loadPartyNetwork = async () => {
     try {
       console.log("[AdminDashboard] loading party network...");
+      // public endpoint — no server-secret header needed
       const { data } = await API.get("/api/party-network");
       console.log("[AdminDashboard] party network loaded, count:", Array.isArray(data) ? data.length : "unknown");
       setPartyNetwork(data || []);
@@ -219,7 +221,7 @@ export default function AdminDashboard() {
     setBarrierStatus(`Editing ${level}...`);
   };
 
-  // 3. SUBMIT (Handles Add AND Edit) - improved
+  // 3. SUBMIT (Handles Add AND Edit) - uses server-side proxy (/api/admin/...)
   const handleBarrierSubmit = async (e) => {
     e.preventDefault();
     if (!targetLevel) {
@@ -248,11 +250,12 @@ export default function AdminDashboard() {
 
       let res;
       if (isEditing) {
-        res = await API.put(`/api/party-network/${editId}`, payload);
+        // proxy PUT to server-side admin route — server will validate admin session and inject API_SECRET_KEY
+        res = await API.put(`/api/admin/party-network/${editId}`, payload);
         setBarrierStatus("Updated Successfully! ✅");
       } else {
-        // fallback: both / and /add exist on server; using /add for clarity
-        res = await API.post("/api/party-network/add", payload);
+        // proxy POST to server-side admin route
+        res = await API.post("/api/admin/party-network/add", payload);
         setBarrierStatus("Saved Successfully! ✅");
       }
 
@@ -274,7 +277,8 @@ export default function AdminDashboard() {
   const handleBarrierDelete = async (nodeId, level) => {
     if (!confirm(`Are you sure you want to delete this ${level}?`)) return;
     try {
-      await API.delete(`/api/party-network/${nodeId}`, { data: { level } });
+      // proxy DELETE via server-side route
+      await API.delete(`/api/admin/party-network/${nodeId}`, { data: { level } });
       await loadPartyNetwork();
     } catch (err) {
       console.error("Delete error:", err?.response?.data || err?.message);
@@ -303,8 +307,9 @@ export default function AdminDashboard() {
         <h1 className="section-heading-ta">நிர்வாக – செய்தி, நிகழ்வு & கட்சிப் பொறுப்பாளர்கள்</h1>
         {user && <p className="status-text">உள்நுழைந்தவர்: {user.name}</p>}
       </header>
+
       {/* ======================================================= */}
-      {/* SECTION 1: PARTY BARRIER MANAGEMENT (HIERARCHY VIEW)    */}
+      {/* SECTION 1: PARTY BARRIER MANAGEMENT (HIERARCHY)    */}
       {/* ======================================================= */}
       <div className="admin-section-box" style={{ border: '2px solid #F26522', padding: '20px', borderRadius: '8px', marginBottom: '30px', backgroundColor: '#fff' }}>
         <h2 className="form-title-ta" style={{ color: '#F26522' }}>கட்சிப் பொறுப்பாளர்கள் மேலாண்மை (Party Barriers)</h2>
