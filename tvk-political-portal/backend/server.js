@@ -1,35 +1,34 @@
-// server.js (Corrected)
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import adminProxy from "./routes/adminProxy.js";
 import connectDB from "./config/db.js";
-import authRoutes from "./routes/authRoutes.js";
-import newsRoutes from "./routes/newsRoutes.js";
-import partyRoutes from "./routes/partyRoutes.js";
-import eventRoutes from "./routes/eventRoutes.js";
 
-// new middleware imports
-import requestLogger from "./middleware/requestLogger.js"; // debug logger
-import checkAuth from "./middleware/checkAuth.js"; // 💡 NEW: Import the security middleware
+// Import Middleware
+import requestLogger from "./middleware/requestLogger.js"; 
+import checkAuth from "./middleware/checkAuth.js";
+
+// Import Routes (Only partyRoutes is shown as an example)
+import partyRoutes from "./routes/partyRoutes.js";
 
 dotenv.config();
 
 const app = express();
 
-// --- Basic health route (MUST be placed before any global middleware) ---
-// This handles the request from App.jsx's getHealth() which calls the root URL.
+// --- Basic Health Route (UNAUTHENTICATED) ---
+// Frontend calls this for status check: GET /
 app.get("/", (req, res) => {
   res.send("TVK Political Portal API running");
 });
-// -----------------------------------------------------------------------
 
-// --- CORS --- (Keep this section as is)
+// --- CORS Configuration ---
 const corsOptions = {
-// ... (your existing corsOptions) ...
+  origin: process.env.FRONTEND_URL || "http://localhost:5173", // Use your actual frontend URL
+  methods: "GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS",
+  allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With", "x-api-key"],
+  credentials: true,
+  optionsSuccessStatus: 204,
 };
 
-// handle preflight for all routes
 app.options("*", cors(corsOptions));
 app.use(cors(corsOptions));
 
@@ -40,20 +39,42 @@ app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 // --- DEBUG request logger ---
 app.use(requestLogger);
 
-// 💡 CRITICAL FIX: Place the security middleware BEFORE all API routes
-// The checkAuth middleware will now exempt the '/' route we defined above.
+// --------------------------------------------------------------------
+// 💡 STEP 1: Register UN-AUTHENTICATED Routes (MUST go before checkAuth)
+// All routes registered here are public (only checked for API key if HTTP method is POST/PUT/DELETE)
+// --------------------------------------------------------------------
+// Maps public read routes (e.g., GET /api/party-network/)
+app.use("/api/party-network", partyRoutes.unauthenticated); 
+
+
+// 🔒 --------------------------------------------------------------------
+// STEP 2: GLOBAL SECURITY MIDDLEWARE 
+// All routes defined BELOW this line require the API Key check.
+// --------------------------------------------------------------------
 app.use(checkAuth); 
 
-// --- Register all API routes (Base paths) ---
-app.use("/api/auth", authRoutes); // Auth routes should handle their own internal token logic
-app.use("/api/news", newsRoutes);
-app.use("/api/party-network", partyRoutes);
-app.use("/api/events", eventRoutes);
-app.use("/api/admin", adminProxy);
+
+// --------------------------------------------------------------------
+// STEP 3: Register AUTHENTICATED API routes (Require API Key + Token)
+// --------------------------------------------------------------------
+// Maps authenticated routes (e.g., POST /api/party-network/add)
+app.use("/api/party-network", partyRoutes.authenticated); 
+// app.use("/api/admin", adminRoutes); // Add other authenticated routes here
+
 
 // --- Start server after DB connected ---
 const startServer = async () => {
-// ... (your existing server start and shutdown logic) ...
+  try {
+    await connectDB(); 
+
+    const PORT = process.env.PORT || 5000;
+    const server = app.listen(PORT, () =>
+      console.log(`Server running on port ${PORT}`)
+    );
+  } catch (err) {
+    console.error("Failed to start server — DB connection error:", err);
+    process.exit(1);
+  }
 };
 
 startServer();

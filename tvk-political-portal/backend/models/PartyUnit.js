@@ -1,57 +1,49 @@
-// models/PartyUnit.js
-import mongoose from "mongoose";
+import mongoose from 'mongoose';
 
-const { Schema, model, Types } = mongoose;
+const PartyUnitSchema = new mongoose.Schema({
+    // Tamil name for the unit (e.g., Union name)
+    nameTa: {
+        type: String,
+        required: true,
+        trim: true
+    },
+    // Type of the unit (union, village, ward, booth)
+    type: {
+        type: String,
+        required: true,
+        enum: ['union', 'village', 'ward', 'booth'],
+        lowercase: true,
+        trim: true
+    },
+    // ID of the parent unit (null for 'union')
+    parentId: {
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'PartyUnit',
+        default: null
+    },
+    // Person's name (பொறுப்பாளர் பெயர்)
+    person: {
+        type: String,
+        trim: true
+    },
+    // Role (பதவி)
+    roleTa: {
+        type: String,
+        trim: true
+    },
+    // Phone number (தொடர்புக்கு)
+    phone: {
+        type: String,
+        trim: true
+    },
+    // Base64 or URL for the person's photo
+    photo: {
+        type: String,
+        trim: true
+    }
+}, {
+    timestamps: true
+});
 
-const PartyUnitSchema = new Schema(
-    {
-        // Name of the unit in Tamil (required for validation)
-        nameTa: {
-            type: String,
-            required: [true, 'Unit name is required.'],
-            trim: true,
-        },
-        // Type of the unit (union, village, ward, booth)
-        type: {
-            type: String,
-            enum: ['union', 'village', 'ward', 'booth'],
-            required: [true, 'Unit type is required.'],
-            lowercase: true,
-        },
-        // Reference to the parent unit (null for 'union')
-        parentId: {
-            type: Types.ObjectId,
-            default: null,
-            index: true,
-            // ref: 'PartyUnit' // Optional: If you want to enforce a Mongoose reference
-        },
-        // Person's Name (The office bearer)
-        person: {
-            type: String,
-            default: '',
-            trim: true,
-        },
-        // Person's Role (The role of the office bearer in Tamil)
-        roleTa: {
-            type: String,
-            default: '',
-            trim: true,
-        },
-        // Contact Phone Number
-        phone: {
-            type: String,
-            default: '',
-            trim: true,
-        },
-        // Photo (Stores the Base64 string of the image)
-        photo: {
-            type: String, 
-            default: '',
-        },
-    },
-    { timestamps: true }
-);
-
-const PartyUnit = model('PartyUnit', PartyUnitSchema);
-
+const PartyUnit = mongoose.model('PartyUnit', PartyUnitSchema);
 export default PartyUnit;

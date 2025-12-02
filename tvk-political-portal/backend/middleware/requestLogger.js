@@ -1,22 +1,15 @@
+/**
+ * Logs key information about incoming requests for debugging purposes.
+ */
 export default function requestLogger(req, res, next) {
-  try {
-    console.log(">>> Incoming:", req.method, req.originalUrl);
-    console.log("    Headers:", {
-      host: req.headers.host,
-      origin: req.headers.origin,
-      "content-type": req.headers["content-type"],
-      "x-api-key": req.headers["x-api-key"] ? "[present]" : "[missing]",
-      authorization: req.headers.authorization ? "[present]" : "[missing]",
-    });
+    const authHeader = req.headers['authorization'] ? 'Present' : 'Missing';
+    const apiKey = req.headers['x-api-key'] ? 'Present' : 'Missing';
 
-    if (req.body && Object.keys(req.body).length) {
-      const bodyPreview = JSON.stringify(req.body).slice(0, 500);
-      console.log("    Body:", bodyPreview);
-    } else {
-      console.log("    Body: (empty or not parsed)");
-    }
-  } catch (err) {
-    console.log("Logger error:", err.message);
-  }
-  next();
+    console.log(
+        `[Request] ${new Date().toLocaleTimeString()} | ${req.method} ${req.originalUrl} ` + 
+        `| Auth: ${authHeader} | API-Key: ${apiKey}`
+    );
+    // You can also log req.body here, but be mindful of password fields.
+    
+    next();
 }
