@@ -1,4 +1,5 @@
 import React from 'react';
+import AnandImg from "../assets/admins/anand.avif"; 
 // Make sure to create these placeholder images in your public folder or replace the paths!
 // Example: /admin1.jpg, /admin2.jpg, /admin3.jpg
 
@@ -9,7 +10,7 @@ const admins = [
     id: 1,
     name: "திரு.ஆனந்த் ",
     role: "கட்சி செயலாளர்",
-    imgSrc: "src/assets/admins/anand.avif", // Replace with actual image path
+    imgSrc: AnandImg, // Replace with actual image path
   },
   {
     id: 2,
