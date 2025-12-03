@@ -1,3 +1,4 @@
+// src/pages/PartyNetwork.jsx
 import PARTY_NETWORK from "../data/partyNetwork.js";
 import HierarchyNode from "../components/HierarchyNode.jsx";
 

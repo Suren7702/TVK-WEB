@@ -19,7 +19,7 @@ export default function PartySelector() {
     const fetchPartyNetwork = async () => {
       try {
         // Calls the Controller: getPartyNetwork
-        const { data } = await API.get("/api/party-network"); 
+        const { data } = await API.get("/party-network"); 
         setPartyNetwork(data); // Update state with live DB data
         setLoading(false);
       } catch (err) {

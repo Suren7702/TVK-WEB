@@ -1,21 +1,36 @@
+// src/api.js
 import axios from "axios";
 
-// Read API URL
+// Read raw env value
 const rawApiUrl = import.meta.env.VITE_API_URL || "";
-export const API_URL = rawApiUrl.replace(/\/+$/, "") || "https://tvk-web.onrender.com";
 
-// Read API key from Vercel env
-const CLIENT_API_KEY = (import.meta.env.VITE_API_KEY || "").trim();
-console.log("[api] CLIENT_API_KEY exists:", !!CLIENT_API_KEY);
+// Trim trailing slash if present so we never produce double slashes later
+const normalizedEnvUrl = rawApiUrl.replace(/\/+$/, "");
 
-// Create Axios instance
+// Fallback to localhost for local development
+const API_URL = normalizedEnvUrl || "http://localhost:5000";
+
+// Create Axios Instance
 const API = axios.create({
   baseURL: API_URL,
-  withCredentials: false,
-  headers: {
-    ...(CLIENT_API_KEY ? { "x-api-key": CLIENT_API_KEY } : {})
-  }
+  // If your backend uses cookie-based sessions change this to true.
+  // If you use JWT tokens in Authorization header, set to false.
+  withCredentials: true,
 });
 
-// Export instance
+// Attach / remove Authorization header helper
+export const setAuthToken = (token) => {
+  if (token) {
+    API.defaults.headers.common["Authorization"] = `Bearer ${token}`;
+  } else {
+    delete API.defaults.headers.common["Authorization"];
+  }
+};
+
+// Example health helper
+export const getHealth = async () => {
+  const res = await API.get("/api/health");
+  return res.data;
+};
+
 export default API;

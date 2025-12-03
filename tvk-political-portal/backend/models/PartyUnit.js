@@ -1,49 +1,28 @@
-import mongoose from 'mongoose';
+import mongoose from "mongoose";
 
-const PartyUnitSchema = new mongoose.Schema({
-    // Tamil name for the unit (e.g., Union name)
-    nameTa: {
-        type: String,
-        required: true,
-        trim: true
-    },
-    // Type of the unit (union, village, ward, booth)
-    type: {
-        type: String,
-        required: true,
-        enum: ['union', 'village', 'ward', 'booth'],
-        lowercase: true,
-        trim: true
-    },
-    // ID of the parent unit (null for 'union')
-    parentId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'PartyUnit',
-        default: null
-    },
-    // Person's name (பொறுப்பாளர் பெயர்)
-    person: {
-        type: String,
-        trim: true
-    },
-    // Role (பதவி)
-    roleTa: {
-        type: String,
-        trim: true
-    },
-    // Phone number (தொடர்புக்கு)
-    phone: {
-        type: String,
-        trim: true
-    },
-    // Base64 or URL for the person's photo
-    photo: {
-        type: String,
-        trim: true
-    }
-}, {
-    timestamps: true
-});
+const partyUnitSchema = new mongoose.Schema({
+  // Hierarchy Info
+  nameTa: { type: String, required: true }, // Name of the place (e.g., "Manapparai")
+  type: { 
+    type: String, 
+    enum: ["union", "village", "ward", "booth"], 
+    required: true 
+  },
+  // Parent Link (A Village belongs to a Union ID, etc.)
+  parentId: { 
+    type: mongoose.Schema.Types.ObjectId, 
+    ref: "PartyUnit", 
+    default: null 
+  },
+  
+  // Person Info (The In-charge)
+  person: { type: String, default: "" },  // Name
+  roleTa: { type: String, default: "" },  // Position (e.g. Secretary)
+  phone: { type: String, default: "" },   // Contact
+  photo: { type: String, default: "" },   // Image URL
 
-const PartyUnit = mongoose.model('PartyUnit', PartyUnitSchema);
-export default PartyUnit;
+  // Optional: If you really need multiple bearers per unit, use an array
+  // bearers: [{ name: String, role: String, phone: String }] 
+}, { timestamps: true });
+
+export default mongoose.model("PartyUnit", partyUnitSchema);
