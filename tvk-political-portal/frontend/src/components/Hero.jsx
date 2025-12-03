@@ -18,12 +18,6 @@ const admins = [
     role: "மாவட்ட செயலாளர்",
     imgSrc: "/admin-placeholder-2.jpg", // Replace with actual image path
   },
-  {
-    id: 3,
-    name: "திரு. நிர்வாகி",
-    role: "பொருளாளர்",
-    imgSrc: "/admin-placeholder-3.jpg", // Replace with actual image path
-  },
 ];
 
 export default function Hero() {
