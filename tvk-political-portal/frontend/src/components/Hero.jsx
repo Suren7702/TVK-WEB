@@ -9,7 +9,7 @@ const admins = [
     id: 1,
     name: "திரு.ஆனந்த் ",
     role: "கட்சி செயலாளர்",
-    imgSrc: "\assets\admins\anand.avif", // Replace with actual image path
+    imgSrc: "/assets/admins/anand.avif", // Replace with actual image path
   },
   {
     id: 2,
