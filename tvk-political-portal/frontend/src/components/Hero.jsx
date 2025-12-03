@@ -9,7 +9,7 @@ const admins = [
     id: 1,
     name: "திரு.ஆனந்த் ",
     role: "கட்சி செயலாளர்",
-    imgSrc: "/assets/admins/anand.avif", // Replace with actual image path
+    imgSrc: "src/assets/admins/anand.avif", // Replace with actual image path
   },
   {
     id: 2,
@@ -19,7 +19,7 @@ const admins = [
   },
   {
     id: 3,
-    name: "திரு. நிர்வாகி 3",
+    name: "திரு. நிர்வாகி",
     role: "பொருளாளர்",
     imgSrc: "/admin-placeholder-3.jpg", // Replace with actual image path
   },
